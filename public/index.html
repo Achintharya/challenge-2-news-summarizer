@@ -151,12 +151,7 @@
 
     <script>
       // Configuration - UPDATE THIS WITH YOUR LAMBDA API GATEWAY URL
-      const LAMBDA_API_URL = "https://kblf7ktnopnwy24nyf5czviz6m0sqkjy.lambda-url.eu-north-1.on.aws/"
-        window.LAMBDA_API_URL ||
-        prompt(
-          "Enter your AWS Lambda API Gateway URL:",
-          
-        );
+      const LAMBDA_API_URL = window.LAMBDA_API_URL || "https://kblf7ktnopnwy24nyf5czviz6m0sqkjy.lambda-url.eu-north-1.on.aws/";
 
       // Hide config note if URL is set
       if (LAMBDA_API_URL && !LAMBDA_API_URL.includes("your-api-gateway-id")) {
