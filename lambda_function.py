@@ -32,7 +32,6 @@ def lambda_handler(event, context):
         if not url:
             return {
                 'statusCode': 400,
-                'headers': {'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({'error': 'URL is required'})
             }
         
@@ -42,7 +41,6 @@ def lambda_handler(event, context):
             if cached_summary:
                 return {
                     'statusCode': 200,
-                    'headers': {'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({
                         'url': url,
                         'summary': cached_summary,
@@ -56,7 +54,6 @@ def lambda_handler(event, context):
         if not article_text:
             return {
                 'statusCode': 400,
-                'headers': {'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({'error': 'Could not extract text from article'})
             }
         
@@ -69,7 +66,6 @@ def lambda_handler(event, context):
         if not summary:
             return {
                 'statusCode': 400,
-                'headers': {'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({'error': 'Could not generate summary'})
             }
         
@@ -80,7 +76,6 @@ def lambda_handler(event, context):
         # Return summary
         return {
             'statusCode': 200,
-            'headers': {'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({
                 'url': url,
                 'summary': summary,
@@ -92,7 +87,6 @@ def lambda_handler(event, context):
     except Exception as e:
         return {
             'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'error': str(e)})
         }
 
