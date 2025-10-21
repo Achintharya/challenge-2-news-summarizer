@@ -1,169 +1,92 @@
-# Challenge 2: Web Scraper with Summary Generation
+# Challenge 2: Web Scraper with AI Summarization (AWS Lambda)
 
 ## Overview
 
-A simple web scraping tool that extracts content from URLs and generates automatic summaries using BeautifulSoup4 for HTML parsing and basic text processing for summarization.
+A serverless web scraping tool that extracts content from any URL and generates intelligent summaries using Mistral AI. Built with AWS Lambda for the backend and a simple HTML frontend hosted on Vercel.
 
 ## Features
 
-- 🌐 **Web Scraping**: Extract content from any webpage
-- 📝 **Auto Summary**: Generate concise summaries from extracted content
-- 📊 **Batch Processing**: Process multiple URLs at once
-- 💾 **JSON Export**: Save results in structured JSON format
-- 📑 **Source Tracking**: Maintain a markdown file with all scraped sources
-- 🛡️ **Error Handling**: Graceful handling of failed requests
+- 🌐 **Web Scraping**: Extract content from any webpage URL
+- 🤖 **AI Summarization**: Intelligent summaries using Mistral AI
+- ⚡ **Serverless**: AWS Lambda backend for scalability
+- 🌍 **Web UI**: Simple interface hosted on Vercel
+- 📝 **Fallback**: Basic summarization when API key not available
 
-## Installation
+## Architecture
 
-1. Clone the repository:
+- **Frontend**: Static HTML/JS hosted on Vercel
+- **Backend**: AWS Lambda Function
+- **AI**: Mistral API for intelligent summarization
+- **Extraction**: BeautifulSoup4 for HTML parsing
+
+## Setup Instructions
+
+### 1. Deploy Lambda Function
+
+1. **Package Dependencies**:
 ```bash
-git clone https://github.com/Achintharya/challenge-2-news-summarizer.git
-cd challenge-2-news-summarizer
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-### Run the Web Scraper
-
-```bash
-python web_scraper.py
-```
-
-You'll be prompted to:
-1. Enter URLs manually (one per line)
-2. Use example URLs
-3. Enter a single URL
-
-### Programmatic Usage
-
-```python
-from web_scraper import WebScraper
-
-# Initialize scraper
-scraper = WebScraper(output_dir="./data")
-
-# Single URL extraction
-result = scraper.extract_article_content("https://example.com/article")
-summary = scraper.generate_summary(result["content"])
-
-# Multiple URLs
-urls = [
-    "https://example.com/article1",
-    "https://example.com/article2"
-]
-results = scraper.extract_multiple_urls(urls)
-
-# Save results
-scraper.save_results(results)
-scraper.save_sources(urls, "My Scraping Session")
-```
-
-## Output Format
-
-### JSON Output (`data/extracted_content.json`)
-```json
-[
-  {
-    "url": "https://example.com/article",
-    "title": "Article Title",
-    "content": "Full extracted content...",
-    "summary": "Generated summary...",
-    "extracted_at": "2024-10-21T21:00:00",
-    "success": true
-  }
-]
-```
-
-### Sources File (`data/sources.md`)
-```markdown
-# Web Scraping Results
-
-_Generated: 2024-10-21 21:00:00_
-
-## Sources (3 URLs)
-
-- [https://example.com/article1](https://example.com/article1)
-- [https://example.com/article2](https://example.com/article2)
-- [https://example.com/article3](https://example.com/article3)
-```
-
-## Project Structure
-
-```
-challenge-2-news-summarizer/
-├── web_scraper.py      # Main scraper implementation
-├── requirements.txt    # Python dependencies
-├── README.md          # Documentation
-├── data/              # Output directory (created automatically)
-│   ├── extracted_content.json
-│   └── sources.md
-└── test_scraper.py    # Test script (optional)
+pip install -r requirements.txt -t ./package
+copy lambda_function.py package\
+cd package
+Compress-Archive -Path * -DestinationPath ..\lambda-deployment.zip
 ```
 
 ## How It Works
 
-1. **Content Extraction**: 
-   - Fetches HTML content from provided URLs
-   - Removes scripts, styles, navigation elements
-   - Extracts text from article tags, main content, or paragraphs
+1. **User enters URL** in the web interface
+2. **Lambda extracts** webpage content using BeautifulSoup4
+3. **Mistral AI generates** intelligent summary with key points
+4. **Results displayed** in the frontend
 
-2. **Summary Generation**:
-   - Identifies meaningful sentences (>50 characters)
-   - Selects first 4 sentences as summary
-   - Limits summary to 600 characters maximum
+## API Response Format
 
-3. **Data Storage**:
-   - Saves extracted content with metadata
-   - Maintains source list for reference
-   - Outputs in JSON format for easy processing
-
-## Configuration
-
-Modify the `WebScraper` class initialization to customize:
-
-```python
-scraper = WebScraper(
-    output_dir="./custom_output"  # Change output directory
-)
+```json
+{
+  "url": "https://example.com/article",
+  "summary": "AI-generated summary with key points...",
+  "word_count": 150,
+  "from_cache": false
+}
 ```
 
-Adjust summary length:
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `MISTRAL_API_KEY` | Mistral API key for AI summaries | Optional (falls back to basic) |
+
+## Technology Stack
+
+- **Frontend**: HTML, CSS, JavaScript
+- **Backend**: AWS Lambda (Python 3.12)
+- **AI**: Mistral API
+- **Web Scraping**: BeautifulSoup4, Requests
+- **Hosting**: Vercel (frontend)
+
+## Testing
+
+Test the Lambda function locally:
 ```python
-summary = scraper.generate_summary(text, max_sentences=6)
+python lambda_function.py
 ```
 
-## Error Handling
+## Cost Optimization
 
-The scraper handles:
-- Network timeouts (10 seconds default)
-- Invalid URLs
-- Missing content
-- Rate limiting (1-second delay between requests)
+- **Lambda**: 1M free requests/month
+- **Mistral API**: Pay per token used
+- **Vercel**: Free tier for static hosting
 
-## Limitations
+## Troubleshooting
 
-- Simple text-based summarization (no AI/ML)
-- May not work with JavaScript-heavy sites
-- Basic content extraction (may miss some dynamic content)
+### No Summary Generated
+- Check if Mistral API key is set
+- Verify the URL is accessible
+- Check Lambda timeout (should be 30+ seconds)
 
-## Future Improvements
-
-- [ ] Add support for RSS feeds
-- [ ] Implement keyword extraction
-- [ ] Add sentiment analysis
-- [ ] Support for PDF and other document formats
-- [ ] Multi-threading for faster batch processing
-- [ ] Integration with AI summarization APIs
+### CORS Errors
+- Ensure Function URL has CORS enabled
+- Check allowed origins in Function URL settings
 
 ## License
 
 MIT
-
-## Author
-
-Created as part of the Intern Assessment - Hands-On Project
