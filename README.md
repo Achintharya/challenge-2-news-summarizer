@@ -1,154 +1,169 @@
-# Challenge 2: News Summarizer (AWS Lambda Backend)
+# Challenge 2: Web Scraper with Summary Generation
 
-## Objective
+## Overview
 
-Create a serverless function that takes a news article URL as input and returns a summarized version using AWS Lambda.
+A simple web scraping tool that extracts content from URLs and generates automatic summaries using BeautifulSoup4 for HTML parsing and basic text processing for summarization.
 
-## Architecture
+## Features
 
-- **Frontend**: Static HTML/JS hosted on Vercel
-- **Backend**: AWS Lambda + API Gateway  
-- **AI**: Mistral API for intelligent summarization
-- **Cache**: Optional DynamoDB for repeated URLs
-- **Extraction**: BeautifulSoup4 for HTML parsing
+- 🌐 **Web Scraping**: Extract content from any webpage
+- 📝 **Auto Summary**: Generate concise summaries from extracted content
+- 📊 **Batch Processing**: Process multiple URLs at once
+- 💾 **JSON Export**: Save results in structured JSON format
+- 📑 **Source Tracking**: Maintain a markdown file with all scraped sources
+- 🛡️ **Error Handling**: Graceful handling of failed requests
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Achintharya/challenge-2-news-summarizer.git
+cd challenge-2-news-summarizer
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+
+### Run the Web Scraper
+
+```bash
+python web_scraper.py
+```
+
+You'll be prompted to:
+1. Enter URLs manually (one per line)
+2. Use example URLs
+3. Enter a single URL
+
+### Programmatic Usage
+
+```python
+from web_scraper import WebScraper
+
+# Initialize scraper
+scraper = WebScraper(output_dir="./data")
+
+# Single URL extraction
+result = scraper.extract_article_content("https://example.com/article")
+summary = scraper.generate_summary(result["content"])
+
+# Multiple URLs
+urls = [
+    "https://example.com/article1",
+    "https://example.com/article2"
+]
+results = scraper.extract_multiple_urls(urls)
+
+# Save results
+scraper.save_results(results)
+scraper.save_sources(urls, "My Scraping Session")
+```
+
+## Output Format
+
+### JSON Output (`data/extracted_content.json`)
+```json
+[
+  {
+    "url": "https://example.com/article",
+    "title": "Article Title",
+    "content": "Full extracted content...",
+    "summary": "Generated summary...",
+    "extracted_at": "2024-10-21T21:00:00",
+    "success": true
+  }
+]
+```
+
+### Sources File (`data/sources.md`)
+```markdown
+# Web Scraping Results
+
+_Generated: 2024-10-21 21:00:00_
+
+## Sources (3 URLs)
+
+- [https://example.com/article1](https://example.com/article1)
+- [https://example.com/article2](https://example.com/article2)
+- [https://example.com/article3](https://example.com/article3)
+```
 
 ## Project Structure
 
 ```
 challenge-2-news-summarizer/
-├── lambda_function.py      # AWS Lambda handler
-├── public/                 # Frontend files (Vercel)
-│   └── index.html         # Web UI
-├── requirements.txt        # Python dependencies
-├── vercel.json            # Vercel static hosting config
-├── LAMBDA_DEPLOYMENT.md   # Step-by-step Lambda setup
-└── README.md
+├── web_scraper.py      # Main scraper implementation
+├── requirements.txt    # Python dependencies
+├── README.md          # Documentation
+├── data/              # Output directory (created automatically)
+│   ├── extracted_content.json
+│   └── sources.md
+└── test_scraper.py    # Test script (optional)
 ```
-
-## Features
-
-- Serverless news summarization using AWS Lambda
-- Intelligent extraction with BeautifulSoup4
-- AI-powered summaries with Mistral API
-- Optional DynamoDB caching for repeated URLs
-- Clean web interface hosted on Vercel
-- CORS-enabled API endpoint
-
-## Quick Start
-
-### 1. Deploy Lambda Backend
-
-Follow the detailed guide in [LAMBDA_DEPLOYMENT.md](./LAMBDA_DEPLOYMENT.md)
-
-Quick steps:
-1. Package Lambda function with dependencies
-2. Create Lambda function in AWS Console
-3. Set up API Gateway with CORS
-4. Configure environment variables
-
-### 2. Deploy Frontend to Vercel
-
-```bash
-git push origin master
-```
-
-Vercel will automatically deploy the static frontend from the `public/` directory.
-
-### 3. Configure Frontend
-
-When you first visit the app, it will prompt for your Lambda API Gateway URL:
-```
-https://your-api-id.execute-api.region.amazonaws.com/prod/summarize
-```
-
-## API Endpoint
-
-### POST /summarize
-
-**Request:**
-```json
-{
-  "url": "https://www.example.com/news-article"
-}
-```
-
-**Response:**
-```json
-{
-  "url": "https://www.example.com/news-article",
-  "summary": "Article summary with key points...",
-  "word_count": 150,
-  "from_cache": false
-}
-```
-
-## Environment Variables (Lambda)
-
-Set these in AWS Lambda Console:
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `MISTRAL_API_KEY` | Mistral API key for AI summaries | Optional |
-| `AWS_REGION` | AWS region (e.g., us-east-1) | Yes |
-| `DYNAMODB_TABLE` | DynamoDB table name for caching | Optional |
-
-## Technology Stack
-
-- **Frontend**: HTML, CSS, JavaScript (Vanilla)
-- **Backend**: AWS Lambda (Python 3.12)
-- **AI**: Mistral API
-- **Extraction**: BeautifulSoup4
-- **Caching**: AWS DynamoDB (optional)
-- **Hosting**: Vercel (frontend only)
 
 ## How It Works
 
-1. User enters a news article URL in the web interface
-2. Frontend sends POST request to Lambda via API Gateway
-3. Lambda function:
-   - Checks DynamoDB cache (if configured)
-   - Fetches and parses article with BeautifulSoup4
-   - Generates summary using Mistral API (or fallback method)
-   - Saves to cache for future requests
-4. Returns formatted summary to frontend
+1. **Content Extraction**: 
+   - Fetches HTML content from provided URLs
+   - Removes scripts, styles, navigation elements
+   - Extracts text from article tags, main content, or paragraphs
 
-## Testing Locally
+2. **Summary Generation**:
+   - Identifies meaningful sentences (>50 characters)
+   - Selects first 4 sentences as summary
+   - Limits summary to 600 characters maximum
+
+3. **Data Storage**:
+   - Saves extracted content with metadata
+   - Maintains source list for reference
+   - Outputs in JSON format for easy processing
+
+## Configuration
+
+Modify the `WebScraper` class initialization to customize:
 
 ```python
-# Test Lambda function locally
-python lambda_function.py
+scraper = WebScraper(
+    output_dir="./custom_output"  # Change output directory
+)
 ```
 
-## Cost Optimization
+Adjust summary length:
+```python
+summary = scraper.generate_summary(text, max_sentences=6)
+```
 
-- **Lambda**: 1M free requests/month
-- **API Gateway**: $3.50 per million requests
-- **DynamoDB**: On-demand billing, very low cost for caching
-- **Vercel**: Free tier for static hosting
+## Error Handling
 
-## Troubleshooting
+The scraper handles:
+- Network timeouts (10 seconds default)
+- Invalid URLs
+- Missing content
+- Rate limiting (1-second delay between requests)
 
-### CORS Errors
-- Ensure API Gateway CORS is properly configured
-- Lambda must return CORS headers in response
+## Limitations
 
-### 500 Errors
-- Check CloudWatch logs for Lambda function
-- Verify environment variables are set
-- Ensure Lambda has proper IAM permissions
+- Simple text-based summarization (no AI/ML)
+- May not work with JavaScript-heavy sites
+- Basic content extraction (may miss some dynamic content)
 
-### No Summary Generated
-- Check if article URL is accessible
-- Verify Mistral API key is valid
-- Some sites may block automated requests
+## Future Improvements
 
-## Security Considerations
-
-- Never commit API keys to Git
-- Use environment variables in Lambda
-- Configure API Gateway throttling for production
-- Consider adding authentication for production use
+- [ ] Add support for RSS feeds
+- [ ] Implement keyword extraction
+- [ ] Add sentiment analysis
+- [ ] Support for PDF and other document formats
+- [ ] Multi-threading for faster batch processing
+- [ ] Integration with AI summarization APIs
 
 ## License
 
 MIT
+
+## Author
+
+Created as part of the Intern Assessment - Hands-On Project

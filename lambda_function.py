@@ -1,22 +1,9 @@
 """
-AWS Lambda function for News Summarization
-Uses BeautifulSoup4 for extraction and Mistral API for summarization
+Simple AWS Lambda function for Web Scraping and Summary Generation
+Uses BeautifulSoup4 for extraction and basic text processing for summarization
 """
 
 import json
-import os
-import hashlib
-from datetime import datetime
-
-# Try to import boto3 for DynamoDB
-try:
-    import boto3
-    dynamodb = boto3.resource('dynamodb')
-    CACHE_ENABLED = True
-except:
-    CACHE_ENABLED = False
-    print("DynamoDB not available - caching disabled")
-
 
 def lambda_handler(event, context):
     """
@@ -35,20 +22,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'URL is required'})
             }
         
-        # Check cache first (if enabled)
-        if CACHE_ENABLED:
-            cached_summary = check_cache(url)
-            if cached_summary:
-                return {
-                    'statusCode': 200,
-                    'body': json.dumps({
-                        'url': url,
-                        'summary': cached_summary,
-                        'from_cache': True
-                    })
-                }
-        
-        # Get article text first
+        # Extract article text
         article_text = extract_article_text(url)
         
         if not article_text:
@@ -57,21 +31,14 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Could not extract text from article'})
             }
         
-        # Get summary using Mistral API if available, otherwise use simple method
-        if os.environ.get('MISTRAL_API_KEY'):
-            summary = get_mistral_summary(article_text, url)
-        else:
-            summary = get_simple_summary(article_text)
+        # Generate simple summary
+        summary = get_simple_summary(article_text)
         
         if not summary:
             return {
                 'statusCode': 400,
                 'body': json.dumps({'error': 'Could not generate summary'})
             }
-        
-        # Save to cache (if enabled)
-        if CACHE_ENABLED:
-            save_to_cache(url, summary)
         
         # Return summary
         return {
@@ -92,7 +59,7 @@ def lambda_handler(event, context):
 
 
 def extract_article_text(url):
-    """Extract text from article using BeautifulSoup4"""
+    """Extract text from webpage using BeautifulSoup4"""
     try:
         import requests
         from bs4 import BeautifulSoup
@@ -107,10 +74,10 @@ def extract_article_text(url):
         soup = BeautifulSoup(response.text, 'html.parser')
         
         # Remove script and style elements
-        for script in soup(["script", "style"]):
+        for script in soup(["script", "style", "nav", "footer", "header"]):
             script.decompose()
         
-        # Try to find article content in common containers
+        # Try to find article content
         article_text = ""
         
         # Look for article tag first
@@ -142,55 +109,11 @@ def extract_article_text(url):
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
         article_text = ' '.join(chunk for chunk in chunks if chunk)
         
-        return article_text[:5000]  # Limit to 5000 chars for API
+        return article_text[:5000]  # Limit to 5000 chars
         
     except Exception as e:
         print(f"Error extracting text: {e}")
         return None
-
-
-def get_mistral_summary(article_text, url):
-    """Use Mistral API to generate intelligent summary"""
-    try:
-        from mistralai import Mistral
-        
-        # Initialize Mistral client
-        client = Mistral(api_key=os.environ.get('MISTRAL_API_KEY'))
-        
-        # Create prompt for summarization
-        prompt = f"""Please provide a comprehensive summary of the following article.
-        Include:
-        1. A 3-4 sentence summary of the main points
-        2. 3-5 key takeaways as bullet points
-        
-        Article URL: {url}
-        
-        Article Text:
-        {article_text[:3000]}  # Limit text to avoid token limits
-        
-        Format your response as:
-        Summary: [Your summary here]
-        
-        Key Points:
-        • [Point 1]
-        • [Point 2]
-        • [Point 3]
-        """
-        
-        # Get response from Mistral
-        response = client.chat.complete(
-            model="mistral-small-latest",
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        return response.choices[0].message.content
-        
-    except Exception as e:
-        print(f"Mistral API error: {e}")
-        # Fallback to simple summary
-        return get_simple_summary(article_text)
 
 
 def get_simple_summary(article_text):
@@ -218,49 +141,6 @@ def get_simple_summary(article_text):
         
     except Exception as e:
         return f"Error creating summary: {str(e)}"
-
-
-def check_cache(url):
-    """
-    Check DynamoDB for cached summary
-    Returns summary if found and less than 24 hours old
-    """
-    try:
-        # Create table reference
-        table = dynamodb.Table('news-summary-cache')
-        
-        # Create unique key from URL
-        url_key = hashlib.md5(url.encode()).hexdigest()
-        
-        # Get item from table
-        response = table.get_item(Key={'url_id': url_key})
-        
-        if 'Item' in response:
-            # Simple cache check - could add time validation
-            return response['Item'].get('summary')
-                
-    except Exception as e:
-        print(f"Cache error: {e}")
-    
-    return None
-
-
-def save_to_cache(url, summary):
-    """Save summary to DynamoDB cache"""
-    try:
-        table = dynamodb.Table('news-summary-cache')
-        url_key = hashlib.md5(url.encode()).hexdigest()
-        
-        table.put_item(
-            Item={
-                'url_id': url_key,
-                'url': url,
-                'summary': summary,
-                'timestamp': datetime.now().isoformat()
-            }
-        )
-    except Exception as e:
-        print(f"Cache save error: {e}")
 
 
 # For local testing
