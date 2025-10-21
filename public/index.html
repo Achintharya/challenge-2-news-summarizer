@@ -186,15 +186,12 @@
 
         try {
           // Send request to Lambda API
-          // Lambda Function URL expects the body wrapped
           const response = await fetch(LAMBDA_API_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              body: JSON.stringify({ url: url }),
-            }),
+            body: JSON.stringify({ url: url }),
           });
 
           const data = await response.json();
