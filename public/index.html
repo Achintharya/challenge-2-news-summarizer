@@ -153,7 +153,7 @@
       // Configuration - UPDATE THIS WITH YOUR LAMBDA API GATEWAY URL
       const LAMBDA_API_URL =
         window.LAMBDA_API_URL ||
-        "https://kblf7ktnopnwy24nyf5czviz6m0sqkjy.lambda-url.eu-north-1.on.aws/";
+        "https://ydff6lhc5q54gcai63z4thhwze0yzarq.lambda-url.us-east-1.on.aws/";
 
       // Hide config note if URL is set
       if (LAMBDA_API_URL && !LAMBDA_API_URL.includes("your-api-gateway-id")) {
@@ -190,12 +190,12 @@
           const encodedUrl = encodeURIComponent(url);
           const apiUrl = `${LAMBDA_API_URL}?url=${encodedUrl}`;
           console.log("Sending request to:", apiUrl);
-          
+
           const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-            }
+            },
           });
 
           const data = await response.json();
