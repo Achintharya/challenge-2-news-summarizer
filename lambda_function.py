@@ -5,6 +5,7 @@ Uses BeautifulSoup4 for extraction and Mistral API for intelligent summarization
 
 import json
 import os
+import base64
 
 def lambda_handler(event, context):
     """
@@ -12,21 +13,56 @@ def lambda_handler(event, context):
     Accepts POST request with URL and returns AI-generated summary
     """
     try:
-        # Handle Lambda Function URL format
-        if isinstance(event.get('body'), str):
-            # If body is a string, parse it
-            body = json.loads(event.get('body', '{}'))
-        else:
-            # Direct invocation or test
-            body = event
+        # Debug: Log the entire event structure
+        print(f"Event keys: {list(event.keys())}")
+        print(f"Full event: {json.dumps(event)}")
         
-        url = body.get('url')
+        # Initialize url as None
+        url = None
         
-        # Check if URL was provided
+        # Check if body exists and handle it
+        if 'body' in event:
+            body_content = event['body']
+            print(f"Body found: {body_content}")
+            
+            # Check if body is base64 encoded
+            if event.get('isBase64Encoded', False):
+                body_content = base64.b64decode(body_content).decode('utf-8')
+                print(f"Decoded body: {body_content}")
+            
+            # Parse the body
+            try:
+                if isinstance(body_content, str):
+                    body = json.loads(body_content)
+                else:
+                    body = body_content
+                url = body.get('url')
+                print(f"Extracted URL: {url}")
+            except Exception as e:
+                print(f"Error parsing body: {e}")
+        
+        # If still no URL, check if it's directly in the event
+        if not url and 'url' in event:
+            url = event['url']
+            print(f"URL found directly in event: {url}")
+        
+        # If still no URL, check headers for debugging
+        if not url and 'headers' in event:
+            print(f"Headers: {json.dumps(event['headers'])}")
+            
+        # Check if URL was found
         if not url:
+            # Return more detailed error for debugging
             return {
                 'statusCode': 400,
-                'body': json.dumps({'error': 'URL is required'})
+                'body': json.dumps({
+                    'error': 'URL is required. Please check if the request body is being sent correctly.',
+                    'debug': {
+                        'event_keys': list(event.keys()),
+                        'has_body': 'body' in event,
+                        'headers': event.get('headers', {}).get('content-type', 'not found')
+                    }
+                })
             }
         
         # Extract article text
@@ -62,6 +98,9 @@ def lambda_handler(event, context):
         }
         
     except Exception as e:
+        print(f"Error in handler: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return {
             'statusCode': 500,
             'body': json.dumps({'error': str(e)})
