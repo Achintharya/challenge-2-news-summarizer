@@ -12,8 +12,14 @@ def lambda_handler(event, context):
     Accepts POST request with URL and returns AI-generated summary
     """
     try:
-        # Get URL from request body
-        body = json.loads(event.get('body', '{}'))
+        # Handle Lambda Function URL format
+        if isinstance(event.get('body'), str):
+            # If body is a string, parse it
+            body = json.loads(event.get('body', '{}'))
+        else:
+            # Direct invocation or test
+            body = event
+        
         url = body.get('url')
         
         # Check if URL was provided
