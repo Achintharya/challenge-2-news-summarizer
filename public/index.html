@@ -186,16 +186,16 @@
 
         try {
           // Send request to Lambda API
-          // Make sure we're sending the body correctly
-          const requestBody = JSON.stringify({ url: url });
-          console.log("Sending request with body:", requestBody);
+          // Try sending as query parameter since body is not working
+          const encodedUrl = encodeURIComponent(url);
+          const apiUrl = `${LAMBDA_API_URL}?url=${encodedUrl}`;
+          console.log("Sending request to:", apiUrl);
           
-          const response = await fetch(LAMBDA_API_URL, {
+          const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-            },
-            body: requestBody,
+            }
           });
 
           const data = await response.json();

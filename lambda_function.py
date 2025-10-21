@@ -20,8 +20,26 @@ def lambda_handler(event, context):
         # Initialize url as None
         url = None
         
+        # First, check query parameters (most reliable for Lambda Function URLs)
+        if 'queryStringParameters' in event and event['queryStringParameters']:
+            url = event['queryStringParameters'].get('url')
+            if url:
+                print(f"URL found in query parameters: {url}")
+        
+        # If not in query params, check raw query string
+        if not url and 'rawQueryString' in event:
+            query_string = event['rawQueryString']
+            print(f"Raw query string: {query_string}")
+            # Parse the query string
+            if query_string:
+                import urllib.parse
+                params = urllib.parse.parse_qs(query_string)
+                if 'url' in params:
+                    url = params['url'][0]
+                    print(f"URL extracted from raw query string: {url}")
+        
         # Check if body exists and handle it
-        if 'body' in event:
+        if not url and 'body' in event:
             body_content = event['body']
             print(f"Body found: {body_content}")
             
@@ -37,7 +55,7 @@ def lambda_handler(event, context):
                 else:
                     body = body_content
                 url = body.get('url')
-                print(f"Extracted URL: {url}")
+                print(f"Extracted URL from body: {url}")
             except Exception as e:
                 print(f"Error parsing body: {e}")
         
@@ -45,10 +63,6 @@ def lambda_handler(event, context):
         if not url and 'url' in event:
             url = event['url']
             print(f"URL found directly in event: {url}")
-        
-        # If still no URL, check headers for debugging
-        if not url and 'headers' in event:
-            print(f"Headers: {json.dumps(event['headers'])}")
             
         # Check if URL was found
         if not url:
